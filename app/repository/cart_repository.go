@@ -13,7 +13,7 @@ type CartRepository interface {
 	Save(cartID, userID string, t *time.Time) (*domain.Cart, error)
 	GetByID(id string) (*domain.Cart, error)
 	// UpdByID(field string, cart *domain.Cart) (*domain.Cart, error)
-	DeleteByID(userID string) error
+	DeleteByID(cartID string) error
 }
 
 type cartRepository struct {
@@ -32,9 +32,9 @@ func (r *cartRepository) Save(cartID, userID string, t *time.Time) (*domain.Cart
 	return cart, nil
 }
 
-func (r *cartRepository) GetByID(userID string) (*domain.Cart, error) {
+func (r *cartRepository) GetByID(cartID string) (*domain.Cart, error) {
 	var cart *domain.Cart
-	if err := r.db.Where("id = ?", userID).Order("id").First(&cart).Error; err != nil {
+	if err := r.db.Where("id = ?", cartID).Order("id").First(&cart).Error; err != nil {
 		return nil, err
 	}
 	return cart, nil
@@ -58,14 +58,14 @@ func (r *cartRepository) GetByID(userID string) (*domain.Cart, error) {
 // 	return r.GetByID(user.ID)
 // }
 
-func (r *cartRepository) DeleteByID(userID string) error {
-	result := r.db.Where("id = ?", userID).Delete(&entity.Cart{})
+func (r *cartRepository) DeleteByID(cartID string) error {
+	result := r.db.Where("id = ?", cartID).Delete(&entity.Cart{})
 	if result.Error != nil {
-		return fmt.Errorf("error occur when deleting the user: %w", result.Error)
+		return fmt.Errorf("error occur when deleting the cart: %w", result.Error)
 	}
 
 	if result.RowsAffected == 0 {
-		return fmt.Errorf("user %s was not found", userID)
+		return fmt.Errorf("cart %s was not found", cartID)
 	}
 
 	return nil
