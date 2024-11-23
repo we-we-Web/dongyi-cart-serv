@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -10,8 +11,8 @@ import (
 )
 
 type CartRepository interface {
-	Save(cartID, userID string, t *time.Time) (*domain.Cart, error)
-	GetByID(id string) (*domain.Cart, error)
+	Save(cartID string, t *time.Time) (*domain.Cart, error)
+	GetByID(cartID string) (*domain.Cart, error)
 	// UpdByID(field string, cart *domain.Cart) (*domain.Cart, error)
 	DeleteByID(cartID string) error
 }
@@ -24,20 +25,28 @@ func NewCartRepository(db *gorm.DB) CartRepository {
 	return &cartRepository{db}
 }
 
-func (r *cartRepository) Save(cartID, userID string, t *time.Time) (*domain.Cart, error) {
-	cart := domain.NewCart(cartID, userID, t)
-	if err := r.db.Create(cart).Error; err != nil {
+func (r *cartRepository) Save(cartID string, t *time.Time) (*domain.Cart, error) {
+	cartModel := domain.NewCart(cartID, t)
+	cartEntity, err := parseToEntity(cartModel)
+	if err != nil {
 		return nil, err
 	}
-	return cart, nil
+	if err := r.db.Create(cartEntity).Error; err != nil {
+		return nil, err
+	}
+	return cartModel, nil
 }
 
 func (r *cartRepository) GetByID(cartID string) (*domain.Cart, error) {
-	var cart *domain.Cart
-	if err := r.db.Where("id = ?", cartID).Order("id").First(&cart).Error; err != nil {
+	var cartEntity *entity.Cart
+	if err := r.db.Where("id = ?", cartID).Order("id").First(&cartEntity).Error; err != nil {
 		return nil, err
 	}
-	return cart, nil
+	cartModel, err := parseToModel(cartEntity)
+	if err != nil {
+		return nil, err
+	}
+	return cartModel, nil
 }
 
 // func (r *cartRepository) UpdByID(field string, user *domain.Cart) (*domain.Cart, error) {
@@ -69,4 +78,46 @@ func (r *cartRepository) DeleteByID(cartID string) error {
 	}
 
 	return nil
+}
+
+func parseToEntity(cart *domain.Cart) (*entity.Cart, error) {
+	productsStr, err := strSerialize(cart.Products)
+	if err != nil {
+		return nil, err
+	}
+	cartEntity := &entity.Cart{
+		ID:       cart.ID,
+		Products: productsStr,
+		CreateAt: cart.CreateAt,
+		UpdateAt: cart.UpdateAt,
+	}
+	return cartEntity, nil
+}
+
+func parseToModel(cart *entity.Cart) (*domain.Cart, error) {
+	productsData, err := strUnserialize(cart.Products)
+	if err != nil {
+		return nil, err
+	}
+	cartModel := &domain.Cart{
+		ID:       cart.ID,
+		Products: productsData,
+		CreateAt: cart.CreateAt,
+		UpdateAt: cart.UpdateAt,
+	}
+	return cartModel, nil
+}
+
+func strSerialize(sa []domain.CartItem) (string, error) {
+	s, err := json.Marshal(sa)
+	if err != nil {
+		return "", err
+	}
+	return string(s), nil
+}
+
+func strUnserialize(s string) ([]domain.CartItem, error) {
+	var ca []domain.CartItem
+	err := json.Unmarshal([]byte(s), &ca)
+	return ca, err
 }

@@ -1,6 +1,8 @@
 package usecases
 
 import (
+	"time"
+
 	"github.com/we-we-Web/dongyi-cart-serv/app/domain"
 	"github.com/we-we-Web/dongyi-cart-serv/app/repository"
 )
@@ -18,10 +20,19 @@ func NewCartUseCase(repo repository.CartRepository) CartUseCase {
 	return &cartUseCase{repo}
 }
 
-func (uc *cartUseCase) Save(userID string) (*domain.Cart, error) {
-	return nil, nil
+func (uc *cartUseCase) Save(cartID string) (*domain.Cart, error) {
+	t := time.Now()
+	cart, err := uc.repo.Save(cartID, &t)
+	if err != nil {
+		return nil, err
+	}
+	return cart, nil
 }
 
 func (uc *cartUseCase) GetByID(cartID string) (*domain.Cart, error) {
-	return nil, nil
+	cart, err := uc.repo.GetByID(cartID)
+	if err != nil {
+		return nil, err
+	}
+	return cart, nil
 }
