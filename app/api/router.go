@@ -2,17 +2,19 @@ package api
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/we-we-Web/dongyi-cart-serv/app/controller"
+	"github.com/we-we-Web/dongyi-cart-serv/app/usecases"
 )
 
-func NewRouter() *gin.Engine {
+func NewRouter(cartUseCase usecases.CartUseCase) *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 	router.Use(corsMiddleware())
 
-	// handler := delivery.NewChatHandler(chatUseCase)
+	handler := controller.NewCartController(cartUseCase)
 
-	// router.POST("/api/chat-add", handler.SaveChat)
-	// router.POST("/api/chat-get", handler.GetChat)
+	router.POST("/api/cart-create", handler.SaveCart)
+	router.POST("/api/cart-get", handler.GetCart)
 	// router.PATCH("/api/msg-add", handler.SendMessage)
 	// router.PATCH("/api/name-modify", handler.ChangeChatName)
 	// router.PATCH("/api/member-add", handler.AddNewMember)

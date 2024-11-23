@@ -11,10 +11,10 @@ type CartUseCase interface {
 }
 
 type cartUseCase struct {
-	repo *repository.CartRepository
+	repo repository.CartRepository
 }
 
-func NewCartUseCase(repo *repository.CartRepository) CartUseCase {
+func NewCartUseCase(repo repository.CartRepository) CartUseCase {
 	return &cartUseCase{repo}
 }
 
