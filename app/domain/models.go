@@ -5,8 +5,8 @@ import "time"
 type Cart struct {
 	ID       string     `json:"id"`
 	Products []CartItem `json:"products"`
-	CreateAt *time.Time `json:"create_at"`
-	UpdateAt *time.Time `json:"update_at"`
+	CreateAt time.Time  `json:"create_at"`
+	UpdateAt time.Time  `json:"update_at"`
 }
 
 type CartItem struct {
@@ -14,7 +14,7 @@ type CartItem struct {
 	Quantity int    `json:"quantity"`
 }
 
-func NewCart(id string, t *time.Time) *Cart {
+func NewCart(id string, t time.Time) *Cart {
 	return &Cart{
 		ID:       id,
 		Products: []CartItem{},
