@@ -2,7 +2,9 @@ package repository
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"reflect"
 	"time"
 
 	"github.com/we-we-Web/dongyi-cart-serv/app/domain"
@@ -11,9 +13,9 @@ import (
 )
 
 type CartRepository interface {
-	Save(cartID string, t *time.Time) (*domain.Cart, error)
+	Save(cartID string, t time.Time) (*domain.Cart, error)
 	GetByID(cartID string) (*domain.Cart, error)
-	// UpdByID(field string, cart *domain.Cart) (*domain.Cart, error)
+	UpdByID(field string, cart *domain.Cart) (*domain.Cart, error)
 	DeleteByID(cartID string) error
 }
 
@@ -25,7 +27,7 @@ func NewCartRepository(db *gorm.DB) CartRepository {
 	return &cartRepository{db}
 }
 
-func (r *cartRepository) Save(cartID string, t *time.Time) (*domain.Cart, error) {
+func (r *cartRepository) Save(cartID string, t time.Time) (*domain.Cart, error) {
 	cartModel := domain.NewCart(cartID, t)
 	cartEntity, err := parseToEntity(cartModel)
 	if err != nil {
@@ -49,23 +51,23 @@ func (r *cartRepository) GetByID(cartID string) (*domain.Cart, error) {
 	return cartModel, nil
 }
 
-// func (r *cartRepository) UpdByID(field string, user *domain.Cart) (*domain.Cart, error) {
-// 	userEntity, err := parseToEntity(user)
-// 	if err != nil {
-// 		return nil, err
-// 	}
+func (r *cartRepository) UpdByID(field string, cart *domain.Cart) (*domain.Cart, error) {
+	cartEntity, err := parseToEntity(cart)
+	if err != nil {
+		return nil, err
+	}
 
-// 	v := reflect.ValueOf(userEntity).Elem()
-// 	f := v.FieldByName(field)
-// 	if !f.IsValid() {
-// 		return nil, errors.New("specified field does not exist in user entity")
-// 	}
+	v := reflect.ValueOf(cartEntity).Elem()
+	f := v.FieldByName(field)
+	if !f.IsValid() {
+		return nil, errors.New("specified field does not exist in user entity")
+	}
 
-// 	if err := r.db.Model(userEntity).Update(field, f.Interface()).Error; err != nil {
-// 		return nil, err
-// 	}
-// 	return r.GetByID(user.ID)
-// }
+	if err := r.db.Model(cartEntity).Update(field, f.Interface()).Error; err != nil {
+		return nil, err
+	}
+	return r.GetByID(cart.ID)
+}
 
 func (r *cartRepository) DeleteByID(cartID string) error {
 	result := r.db.Where("id = ?", cartID).Delete(&entity.Cart{})
