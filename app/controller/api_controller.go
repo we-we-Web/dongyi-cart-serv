@@ -43,7 +43,43 @@ func (h *CartController) GetCart(c *gin.Context) {
 	}
 	cart, err := h.cartUseCase.GetByID(body.ID)
 	if err != nil {
-		c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, cart)
+}
+
+func (h *CartController) DeleteCart(c *gin.Context) {
+	type Body struct {
+		ID string `json:"id"` // cart id
+	}
+	var body Body
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	err := h.cartUseCase.DeleteByID(body.ID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "success"})
+}
+
+func (h *CartController) UpdCartItem(c *gin.Context) {
+	type Body struct {
+		ID       string `json:"id"`      // cart id
+		Product  string `json:"product"` // product id
+		Quantity int    `json:"quantity"`
+	}
+	var body Body
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	cart, err := h.cartUseCase.UpdProductItem(body.ID, body.Product, body.Quantity)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, cart)
