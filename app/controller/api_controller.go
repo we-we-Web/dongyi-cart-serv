@@ -68,16 +68,17 @@ func (h *CartController) DeleteCart(c *gin.Context) {
 
 func (h *CartController) UpdCartItem(c *gin.Context) {
 	type Body struct {
-		ID       string `json:"id"`      // cart id
-		Product  string `json:"product"` // product id
-		Quantity int    `json:"quantity"`
+		ID        string `json:"id"`      // cart id
+		Product   string `json:"product"` // product id
+		Delta     int    `json:"delta"`
+		Remaining int    `json:"remaining"`
 	}
 	var body Body
 	if err := c.ShouldBindJSON(&body); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	cart, err := h.cartUseCase.UpdProductItem(body.ID, body.Product, body.Quantity)
+	cart, err := h.cartUseCase.UpdProductItem(body.ID, body.Product, body.Delta, body.Remaining)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return

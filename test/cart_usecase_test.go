@@ -59,14 +59,15 @@ func TestCartUseCase_UpdProductItem_AddNewItem(t *testing.T) {
 
 	cartID := "test_cart"
 	productID := "product_1"
-	quantity := 3
+	delta := 3
+	remaining := 10
 	initialCart := &domain.Cart{ID: cartID, Products: []domain.CartItem{}}
-	updatedCart := &domain.Cart{ID: cartID, Products: []domain.CartItem{{Product: productID, Quantity: quantity}}}
+	updatedCart := &domain.Cart{ID: cartID, Products: []domain.CartItem{{Product: productID, Quantity: delta}}}
 
 	mockRepo.On("GetByID", cartID).Return(initialCart, nil)
 	mockRepo.On("UpdByID", "Products", updatedCart).Return(updatedCart, nil)
 
-	cart, err := uc.UpdProductItem(cartID, productID, quantity)
+	cart, err := uc.UpdProductItem(cartID, productID, delta, remaining)
 
 	assert.NoError(t, err)
 	assert.Equal(t, updatedCart, cart)
@@ -80,17 +81,19 @@ func TestCartUseCase_UpdProductItem_UpdateQuantity(t *testing.T) {
 
 	cartID := "test_cart"
 	productID := "product_1"
-	newQuantity := 5
-	initialCart := &domain.Cart{ID: cartID, Products: []domain.CartItem{{Product: productID, Quantity: 2}}}
-	updatedCart := &domain.Cart{ID: cartID, Products: []domain.CartItem{{Product: productID, Quantity: newQuantity}}}
+	quantity := 2
+	delta := 5
+	remaining := 10
+	initialCart := &domain.Cart{ID: cartID, Products: []domain.CartItem{{Product: productID, Quantity: quantity}}}
+	updatedCart := &domain.Cart{ID: cartID, Products: []domain.CartItem{{Product: productID, Quantity: quantity + delta}}}
 
 	mockRepo.On("GetByID", cartID).Return(initialCart, nil)
 	mockRepo.On("UpdByID", "Products", updatedCart).Return(updatedCart, nil)
 
-	cart, err := uc.UpdProductItem(cartID, productID, newQuantity)
+	cart, err := uc.UpdProductItem(cartID, productID, delta, remaining)
 
 	assert.NoError(t, err)
-	assert.Equal(t, updatedCart, cart)
+	assert.Equal(t, updatedCart.Products, cart.Products)
 	mockRepo.AssertCalled(t, "GetByID", cartID)
 	mockRepo.AssertCalled(t, "UpdByID", "Products", updatedCart)
 }
@@ -101,16 +104,41 @@ func TestCartUseCase_UpdProductItem_RemoveItem(t *testing.T) {
 
 	cartID := "test_cart"
 	productID := "product_1"
+	delta := -2
+	remaining := 10
 	initialCart := &domain.Cart{ID: cartID, Products: []domain.CartItem{{Product: productID, Quantity: 2}}}
 	updatedCart := &domain.Cart{ID: cartID, Products: []domain.CartItem{}}
 
 	mockRepo.On("GetByID", cartID).Return(initialCart, nil)
 	mockRepo.On("UpdByID", "Products", updatedCart).Return(updatedCart, nil)
 
-	cart, err := uc.UpdProductItem(cartID, productID, 0)
+	cart, err := uc.UpdProductItem(cartID, productID, delta, remaining)
 
 	assert.NoError(t, err)
 	assert.Equal(t, updatedCart, cart)
 	mockRepo.AssertCalled(t, "GetByID", cartID)
 	mockRepo.AssertCalled(t, "UpdByID", "Products", updatedCart)
+}
+
+func TestCartUseCase_UpdProductItem_ExceedsStock(t *testing.T) {
+	mockRepo := new(repository.MockCartRepository)
+	uc := usecases.NewCartUseCase(mockRepo)
+
+	cartID := "test_cart"
+	productID := "product_1"
+	quantity := 3
+	delta := 4
+	remaining := 5
+	initialCart := &domain.Cart{ID: cartID, Products: []domain.CartItem{{Product: productID, Quantity: quantity}}}
+
+	mockRepo.On("GetByID", cartID).Return(initialCart, nil)
+
+	cart, err := uc.UpdProductItem(cartID, productID, delta, remaining)
+
+	assert.Error(t, err)
+	assert.Nil(t, cart)
+	assert.Equal(t, "quantity exceeds remaining stock", err.Error())
+
+	mockRepo.AssertCalled(t, "GetByID", cartID)
+	mockRepo.AssertNotCalled(t, "UpdByID")
 }

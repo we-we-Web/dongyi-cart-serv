@@ -12,7 +12,7 @@ type CartUseCase interface {
 	Save(userID string) (*domain.Cart, error)
 	GetByID(cartID string) (*domain.Cart, error)
 	DeleteByID(cartID string) error
-	UpdProductItem(cartID, productID string, quantity int) (*domain.Cart, error)
+	UpdProductItem(cartID, productID string, delta int, remaining int) (*domain.Cart, error)
 }
 
 type cartUseCase struct {
@@ -44,7 +44,7 @@ func (uc *cartUseCase) DeleteByID(cartID string) error {
 	return uc.repo.DeleteByID(cartID)
 }
 
-func (uc *cartUseCase) UpdProductItem(cartID, productID string, quantity int) (*domain.Cart, error) {
+func (uc *cartUseCase) UpdProductItem(cartID, productID string, delta int, remaining int) (*domain.Cart, error) {
 	cart, err := uc.repo.GetByID(cartID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch cart %s: %w", cartID, err)
@@ -56,19 +56,21 @@ func (uc *cartUseCase) UpdProductItem(cartID, productID string, quantity int) (*
 
 	found := false
 	for i, item := range cart.Products {
+
 		if item.Product == productID {
+			cart.Products[i].Quantity += delta
 			found = true
-			if quantity <= 0 {
+			if cart.Products[i].Quantity <= 0 {
 				cart.Products = removeProductItem(cart.Products, i)
-			} else {
-				cart.Products[i].Quantity = quantity
+			} else if cart.Products[i].Quantity > remaining {
+				return nil, fmt.Errorf("quantity exceeds remaining stock")
 			}
 			break
 		}
 	}
 
-	if !found && quantity > 0 {
-		cart.Products = appendNewProductItem(cart.Products, productID, quantity)
+	if !found && delta > 0 && delta <= remaining {
+		cart.Products = appendNewProductItem(cart.Products, productID, delta)
 	}
 
 	field := "Products"
