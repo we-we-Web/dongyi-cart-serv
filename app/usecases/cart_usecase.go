@@ -58,12 +58,13 @@ func (uc *cartUseCase) UpdProductItem(cartID, productID string, delta int, remai
 	for i, item := range cart.Products {
 
 		if item.Product == productID {
+			if item.Quantity+delta > remaining {
+				return nil, fmt.Errorf("quantity exceeds remaining stock")
+			}
 			cart.Products[i].Quantity += delta
 			found = true
 			if cart.Products[i].Quantity <= 0 {
 				cart.Products = removeProductItem(cart.Products, i)
-			} else if cart.Products[i].Quantity > remaining {
-				return nil, fmt.Errorf("quantity exceeds remaining stock")
 			}
 			break
 		}
