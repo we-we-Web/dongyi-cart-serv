@@ -13,6 +13,7 @@ type CartUseCase interface {
 	GetByID(cartID string) (*domain.Cart, error)
 	DeleteByID(cartID string) error
 	UpdProductItem(cartID, productID string, delta int, remaining int) (*domain.Cart, error)
+	ClearCart(cartID string) error
 }
 
 type cartUseCase struct {
@@ -81,6 +82,20 @@ func (uc *cartUseCase) UpdProductItem(cartID, productID string, delta int, remai
 	}
 
 	return cart, nil
+}
+
+func (uc *cartUseCase) ClearCart(cartID string) error {
+	cart, err := uc.repo.GetByID(cartID)
+	if err != nil {
+		return err
+	}
+	cart.Products = []domain.CartItem{}
+	field := "Products"
+	_, err = uc.repo.UpdByID(field, cart)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func appendNewProductItem(products []domain.CartItem, productID string, quantity int) []domain.CartItem {

@@ -17,6 +17,7 @@ func NewRouter(cartUseCase usecases.CartUseCase) *gin.Engine {
 	router.POST("/api/cart-get", handler.GetCart)
 	router.DELETE("/api/cart-del", handler.DeleteCart)
 	router.PATCH("/api/item-upd", handler.UpdCartItem)
+	router.PATCH("/api/cart-clear", handler.ClearCart)
 
 	return router
 }

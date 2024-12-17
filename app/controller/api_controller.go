@@ -85,3 +85,20 @@ func (h *CartController) UpdCartItem(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, cart)
 }
+
+func (h *CartController) ClearCart(c *gin.Context) {
+	type Body struct {
+		ID string `json:"id"` // cart id
+	}
+	var body Body
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	err := h.cartUseCase.ClearCart(body.ID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "clear successfully"})
+}
