@@ -12,8 +12,9 @@ type CartUseCase interface {
 	Save(userID string) (*domain.Cart, error)
 	GetByID(cartID string) (*domain.Cart, error)
 	DeleteByID(cartID string) error
-	UpdProductItem(cartID, productID string, delta int, remaining int) (*domain.Cart, error)
+	UpdProductItem(cartID, productID, size string, delta int, remaining int) (*domain.Cart, error)
 	ClearCart(cartID string) error
+	RemoveItem(cartID, productID string) error
 }
 
 type cartUseCase struct {
@@ -38,6 +39,15 @@ func (uc *cartUseCase) GetByID(cartID string) (*domain.Cart, error) {
 	if err != nil {
 		return nil, err
 	}
+	for _, item := range cart.Products {
+		if item.Spec == nil {
+			cart.Products = []domain.CartItem{}
+			field := "Products"
+			if _, err := uc.repo.UpdByID(field, cart); err != nil {
+				return nil, err
+			}
+		}
+	}
 	return cart, nil
 }
 
@@ -45,7 +55,7 @@ func (uc *cartUseCase) DeleteByID(cartID string) error {
 	return uc.repo.DeleteByID(cartID)
 }
 
-func (uc *cartUseCase) UpdProductItem(cartID, productID string, delta int, remaining int) (*domain.Cart, error) {
+func (uc *cartUseCase) UpdProductItem(cartID, productID, size string, delta int, remaining int) (*domain.Cart, error) {
 	cart, err := uc.repo.GetByID(cartID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch cart %s: %w", cartID, err)
@@ -59,12 +69,12 @@ func (uc *cartUseCase) UpdProductItem(cartID, productID string, delta int, remai
 	for i, item := range cart.Products {
 
 		if item.Product == productID {
-			if item.Quantity+delta > remaining {
+			if item.Spec[size]+delta > remaining {
 				return nil, fmt.Errorf("quantity exceeds remaining stock")
 			}
-			cart.Products[i].Quantity += delta
+			cart.Products[i].Spec[size] += delta
 			found = true
-			if cart.Products[i].Quantity <= 0 {
+			if cart.Products[i].Spec[size] <= 0 {
 				cart.Products = removeProductItem(cart.Products, i)
 			}
 			break
@@ -72,7 +82,7 @@ func (uc *cartUseCase) UpdProductItem(cartID, productID string, delta int, remai
 	}
 
 	if !found && delta > 0 && delta <= remaining {
-		cart.Products = appendNewProductItem(cart.Products, productID, delta)
+		cart.Products = appendNewProductItem(cart.Products, productID, size, delta)
 	}
 
 	field := "Products"
@@ -98,10 +108,35 @@ func (uc *cartUseCase) ClearCart(cartID string) error {
 	return nil
 }
 
-func appendNewProductItem(products []domain.CartItem, productID string, quantity int) []domain.CartItem {
+func (uc *cartUseCase) RemoveItem(cartID, productID string) error {
+	cart, err := uc.GetByID(cartID)
+	if err != nil {
+		return err
+	}
+	pos := -1
+	for idx, item := range cart.Products {
+		if item.Product == productID {
+			pos = idx
+			break
+		}
+	}
+	if pos != -1 {
+		cart.Products = removeProductItem(cart.Products, pos)
+	}
+	field := "Products"
+	_, err = uc.repo.UpdByID(field, cart)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func appendNewProductItem(products []domain.CartItem, productID, size string, quantity int) []domain.CartItem {
 	newProducts := append(products, domain.CartItem{
-		Product:  productID,
-		Quantity: quantity,
+		Product: productID,
+		Spec: map[string]int{
+			size: quantity,
+		},
 	})
 	return newProducts
 }

@@ -10,8 +10,8 @@ type Cart struct {
 }
 
 type CartItem struct {
-	Product  string `json:"product"`
-	Quantity int    `json:"quantity"`
+	Product string         `json:"product"`
+	Spec    map[string]int `json:"spec"`
 }
 
 func NewCart(id string, t time.Time) *Cart {
@@ -23,9 +23,11 @@ func NewCart(id string, t time.Time) *Cart {
 	}
 }
 
-func NewCartItem(productID string, quantity int) *CartItem {
+func NewCartItem(productID string, size string, quantity int) *CartItem {
 	return &CartItem{
-		Product:  productID,
-		Quantity: quantity,
+		Product: productID,
+		Spec: map[string]int{
+			size: quantity,
+		},
 	}
 }
