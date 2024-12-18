@@ -67,7 +67,9 @@ func TestCartUseCase_UpdProductItem_AddNewItem(t *testing.T) {
 		ID: cartID, Products: []domain.CartItem{
 			{
 				Product: productID,
-				Spec:    map[string]int{},
+				Spec: map[string]int{
+					size: delta,
+				},
 			},
 		},
 	}
